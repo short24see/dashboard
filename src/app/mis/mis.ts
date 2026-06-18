@@ -5,6 +5,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { MisPlRow, MisService } from '../services/mis';
 export interface ExpenseRow {
   type: 'section' | 'item' | 'total';
   particulars: string;
@@ -21,11 +22,17 @@ export interface ExpenseRow {
 })
 export class MIS implements OnInit {
   activeTab = 'pl';
-  constructor(private router: Router) {
+  plLoading = false;
+  plError = '';
+  plLastSyncedAt = '';
+
+  constructor(private router: Router, private misService: MisService) {
 
   }
 
   ngOnInit(): void {
+    this.loadPlData();
+
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
@@ -69,7 +76,7 @@ export class MIS implements OnInit {
     'mayRatio'
   ];
 
-  dataSource = [
+  dataSource: MisPlRow[] = [
     // ===== PROFIT =====
     {
       particular: 'Net Profit',
@@ -237,6 +244,26 @@ export class MIS implements OnInit {
       total: true
     }
   ];
+
+  private loadPlData() {
+    this.plLoading = true;
+    this.plError = '';
+
+    this.misService.getPl().subscribe({
+      next: (res) => {
+        if (Array.isArray(res.rows) && res.rows.length) {
+          this.dataSource = res.rows;
+          this.plLastSyncedAt = res.lastSyncedAt;
+        }
+
+        this.plLoading = false;
+      },
+      error: () => {
+        this.plError = 'Unable to load live P&L data. Showing cached fallback data.';
+        this.plLoading = false;
+      }
+    });
+  }
 
   setActive(tab: string) {
     this.activeTab = tab;

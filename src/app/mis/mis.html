@@ -35,6 +35,19 @@
 
 </div>
 @if(activeTab == 'pl'){
+@if(plLoading || plError || plLastSyncedAt){
+<div class="pl-status" [class.error]="plError">
+    @if(plLoading){
+    <span>Loading P&L data...</span>
+    }
+    @if(!plLoading && plError){
+    <span>{{ plError }}</span>
+    }
+    @if(!plLoading && !plError && plLastSyncedAt){
+    <span>Loaded from cached MIS data. Last synced: {{ plLastSyncedAt | date:'medium' }}</span>
+    }
+</div>
+}
 <div class="modern-table-wrapper table-scroll">
 
     <table mat-table [dataSource]="dataSource" class="modern-table" sticky>
