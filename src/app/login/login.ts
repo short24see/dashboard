@@ -2,35 +2,23 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { Login } from '../services/login';
-import { FloatLabelType } from '@angular/material/form-field';
-
-
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, CommonModule, MatFormFieldModule, FormsModule, MatCardModule, MatInputModule],
+  imports: [FormsModule, CommonModule, MatFormFieldModule, MatCardModule, MatInputModule, MatButtonModule, MatSnackBarModule],
   templateUrl: './login.html',
   styleUrl: './login.less',
 })
 export class login implements OnInit {
-  name = '';
-  unitName = '';
-  contactPerson = '';
   email = '';
-  address = '';
-  gst = '';
-
-  mobile = '';
   password = '';
-  isRegister = false;
-  error = '';
-  mode: 'login' | 'register' | 'forgot' | 'reset' = 'login';
+  mode: 'login' | 'forgot' | 'reset' = 'login';
   token: string = '';
   confirmPassword = '';
   floatLabelType: any = 'never';
@@ -46,7 +34,6 @@ export class login implements OnInit {
       this.token = params['token'];
       if (this.token) {
         this.mode = 'reset';   // automatically switch to reset screen
-        console.log('Reset token:', this.token);
       }
     });
     const urlToken = this.route.snapshot.params['token'];
@@ -54,69 +41,23 @@ export class login implements OnInit {
       this.mode = 'reset';
       this.token = urlToken;
     }
-  }
-  toggleMode() {
-    this.isRegister = !this.isRegister;
-    this.error = '';
-  }
 
+    if (this.mode === 'login' && this.loginService.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
   login() {
-    this.loginService.login(this.mobile, this.password).subscribe({
+    this.loginService.login(this.email, this.password).subscribe({
       next: (res: any) => {
-        console.log('Login response:', res);
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.user.role);
-        localStorage.setItem('userId', res.user.id);
-        localStorage.setItem('adminId', res.user.created_by);
-        // if (res.user.role === 'SUPERADMIN') {
-        //   this.router.navigate(['/manage-admin']);
-        // } else if (res.user.role === 'ADMIN') {
-        //   this.router.navigate(['/admin-dashboard']);
-        // } else {
-        //   this.router.navigate(['/inspection-form']);
-        // }
+        this.loginService.saveSession(res);
+        this.router.navigate(['/dashboard']);
       },
       error: err => {
-        this.router.navigate(['/']);
-        // this.snack.open(
-        //   err.error.message || 'Login failed. Please try again.',
-        //   'Close',
-        //   {
-        //     duration: 3000,
-        //     panelClass: ['error-snackbar']
-        //   }
-        // );
-      }
-    });
-  }
-
-  register() {
-    const payload = {
-      name: this.name,
-      unitName: this.unitName,
-      mobile: this.mobile,
-      email: this.email,
-      address: this.address,
-      password: this.password
-    };
-    this.loginService.register(payload).subscribe({
-      next: () => {
         this.snack.open(
-          'Registration successful. Please login.',
+          err.error?.message || 'Login failed. Please try again.',
           'Close',
           {
             duration: 3000,
-            panelClass: ['success-snackbar']
-          }
-        );
-        this.toggleMode();
-      },
-      error: err => {
-        this.snack.open(
-          err.error.message || 'Registration failed. Please try again.',
-          'Ok',
-          {
-            duration: 2000,
             panelClass: ['error-snackbar']
           }
         );
@@ -125,7 +66,7 @@ export class login implements OnInit {
   }
 
   sendResetLink() {
-    this.loginService.sendOtp(this.email)
+    this.loginService.sendResetLink(this.email)
       .subscribe({
         next: () => {
           this.snack.open(
@@ -149,8 +90,17 @@ export class login implements OnInit {
         }
       });
   }
+
   resetPassword() {
-    this.loginService.verifyOtp(this.token, this.password, this.confirmPassword).subscribe({
+    if (this.password !== this.confirmPassword) {
+      this.snack.open('Passwords do not match.', 'Close', {
+        duration: 3000,
+        panelClass: ['error-snackbar']
+      });
+      return;
+    }
+
+    this.loginService.resetPassword(this.token, this.password).subscribe({
       next: () => {
         this.password = '';
         this.confirmPassword = '';
@@ -163,7 +113,29 @@ export class login implements OnInit {
             panelClass: ['success-snackbar']
           }
         );
+        this.router.navigate(['/login']);
+      },
+      error: err => {
+        this.snack.open(
+          err.error?.message || 'Failed to reset password.',
+          'Close',
+          {
+            duration: 3000,
+            panelClass: ['error-snackbar']
+          }
+        );
       }
     });
+  }
+
+  showForgotPassword() {
+    this.password = '';
+    this.mode = 'forgot';
+  }
+
+  showLogin() {
+    this.password = '';
+    this.confirmPassword = '';
+    this.mode = 'login';
   }
 }

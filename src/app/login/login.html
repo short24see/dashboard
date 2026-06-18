@@ -1,33 +1,74 @@
 <div class="login-wrapper">
   <mat-card class="login-card">
 
-    <h2 class="login-title">Login Into Your Account</h2>
+    <h2 class="login-title" *ngIf="mode === 'login'">Login Into Your Account</h2>
+    <h2 class="login-title" *ngIf="mode === 'forgot'">Forgot Password</h2>
+    <h2 class="login-title" *ngIf="mode === 'reset'">Reset Password</h2>
 
-    <form>
+    <form *ngIf="mode === 'login'" (ngSubmit)="login()">
 
-      <!-- EMAIL -->
       <div class="field-group">
         <label class="field-label">Email*</label>
         <mat-form-field appearance="outline" [floatLabel]="floatLabelType" class="full-width">
-          <input matInput type="email" required />
+          <input matInput type="email" name="email" [(ngModel)]="email" required />
         </mat-form-field>
       </div>
 
-      <!-- PASSWORD -->
       <div class="field-group">
         <label class="field-label">Password*</label>
         <mat-form-field appearance="outline" [floatLabel]="floatLabelType" class="full-width">
-          <input matInput type="password" required />
+          <input matInput type="password" name="password" [(ngModel)]="password" required />
         </mat-form-field>
       </div>
 
       <button
         mat-raised-button
         color="primary"
-        class="login-btn full-width" (click)="login()">
+        class="login-btn full-width"
+        type="submit">
         Login Account
       </button>
 
+      <button mat-button type="button" class="link-btn" (click)="showForgotPassword()">
+        Forgot password?
+      </button>
+    </form>
+
+    <form *ngIf="mode === 'forgot'" (ngSubmit)="sendResetLink()">
+      <div class="field-group">
+        <label class="field-label">Email*</label>
+        <mat-form-field appearance="outline" [floatLabel]="floatLabelType" class="full-width">
+          <input matInput type="email" name="forgotEmail" [(ngModel)]="email" required />
+        </mat-form-field>
+      </div>
+
+      <button mat-raised-button color="primary" class="login-btn full-width" type="submit">
+        Send Reset Link
+      </button>
+
+      <button mat-button type="button" class="link-btn" (click)="showLogin()">
+        Back to login
+      </button>
+    </form>
+
+    <form *ngIf="mode === 'reset'" (ngSubmit)="resetPassword()">
+      <div class="field-group">
+        <label class="field-label">New Password*</label>
+        <mat-form-field appearance="outline" [floatLabel]="floatLabelType" class="full-width">
+          <input matInput type="password" name="newPassword" [(ngModel)]="password" required />
+        </mat-form-field>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Confirm Password*</label>
+        <mat-form-field appearance="outline" [floatLabel]="floatLabelType" class="full-width">
+          <input matInput type="password" name="confirmPassword" [(ngModel)]="confirmPassword" required />
+        </mat-form-field>
+      </div>
+
+      <button mat-raised-button color="primary" class="login-btn full-width" type="submit">
+        Update Password
+      </button>
     </form>
 
   </mat-card>

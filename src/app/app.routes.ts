@@ -7,12 +7,15 @@ import { login } from './login/login';
 import { Stock } from './stock/stock';
 import { Asset } from './asset/asset';
 import { Bom } from './bom/bom';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
     { path: 'login', component: login },
+    { path: 'resetPassword', component: login },
     {
         path: '',
         component: TopNavbar,
+        canActivate: [authGuard],
         children: [
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             { path: 'dashboard', component: AdminDashboard },

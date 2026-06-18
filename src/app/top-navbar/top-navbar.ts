@@ -6,6 +6,7 @@ import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Login } from '../services/login';
 
 @Component({
   selector: 'app-top-navbar',
@@ -16,14 +17,21 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class TopNavbar implements OnInit {
   workflowOpen = false;
   activeNav = '';
-  constructor(private router: Router) {
+  userEmail = '';
+  userName = '';
+  avatarInitial = 'U';
+
+  constructor(private router: Router, private loginService: Login) {
 
   }
 
   ngOnInit() {
+   this.loadCurrentUser();
+
    this.router.events
     .pipe(filter(event => event instanceof NavigationEnd))
     .subscribe((event: NavigationEnd) => {
+      this.loadCurrentUser();
       const url = event.urlAfterRedirects;
 
       if (url === '/dashboard') {
@@ -56,6 +64,16 @@ export class TopNavbar implements OnInit {
   }
 
   logout(){
-    this.router.navigate(['/login'])
+    this.loginService.logout();
+  }
+
+  private loadCurrentUser() {
+    const user = this.loginService.getCurrentUser();
+    const email = user.email || 'Unknown email';
+    const fallbackName = email.includes('@') ? email.split('@')[0] : 'User';
+
+    this.userEmail = email;
+    this.userName = user.name || fallbackName;
+    this.avatarInitial = (this.userName || email || 'U').trim().charAt(0).toUpperCase();
   }
 }

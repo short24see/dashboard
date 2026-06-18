@@ -17,12 +17,12 @@
 
     <div class="right">
         <div class="user">
-            <span class="avatar">U</span>
-            <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                <span class="User">User</span>
-                <span>admin@jayanitha.com</span>
+            <span class="avatar">{{ avatarInitial }}</span>
+            <div class="user-details">
+                <span class="User">{{ userName }}</span>
+                <span class="user-email" [matTooltip]="userEmail">{{ userEmail }}</span>
             </div>
-            <button mat-icon-button class="logout-btn" matTooltip="Logout" (click)="logout()">
+            <button mat-icon-button type="button" class="logout-btn" matTooltip="Logout" (click)="logout()">
                 <mat-icon>logout</mat-icon>
             </button>
         </div>

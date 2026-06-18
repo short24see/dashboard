@@ -9,20 +9,30 @@ export class Login {
 
   constructor(private http: HttpClient, private router: Router) { }
 
-  login(mobile: string, password: string) {
-    this.router.navigate(['/dashboard']);
-    return this.http.post(`${this.api}/login`, { mobile, password });
+  login(email: string, password: string) {
+    return this.http.post(`${this.api}/login`, { email, password });
   }
 
   saveSession(res: any) {
-    localStorage.setItem('token', res.token);
-    localStorage.setItem('role', res.user.role);
-    localStorage.setItem('user_id', res.user.id);
-    localStorage.setItem('adminId', res.user.created_by);
+    const user = res?.user || {};
+
+    localStorage.setItem('token', res?.token || '');
+    localStorage.setItem('role', user.role || '');
+    localStorage.setItem('userId', user._id || user.id || '');
+    localStorage.setItem('userEmail', user.email || '');
+    localStorage.setItem('userName', user.name || '');
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
   logout() {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('user');
+    localStorage.removeItem('adminId');
+    localStorage.removeItem('user_id');
     this.router.navigate(['/login']);
   }
 
@@ -31,22 +41,59 @@ export class Login {
   }
 
   isLoggedIn() {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    return !!token && !this.isTokenExpired(token);
   }
 
-  register(payload: any) {
-    return this.http.post(`${this.api}/register`, payload);
+  getCurrentUser() {
+    const email = localStorage.getItem('userEmail') || '';
+    const name = localStorage.getItem('userName') || '';
+    const role = localStorage.getItem('role') || '';
+    const id = localStorage.getItem('userId') || '';
+
+    if (email || name || role || id) {
+      return { email, name, role, id };
+    }
+
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return {
+        email: user.email || '',
+        name: user.name || '',
+        role: user.role || '',
+        id: user._id || user.id || ''
+      };
+    } catch {
+      return { email: '', name: '', role: '', id: '' };
+    }
   }
 
-  sendOtp(email: string) {
+  clearInvalidSession() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('user');
+  }
+
+  private isTokenExpired(token: string) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || ''));
+      return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+    } catch {
+      return true;
+    }
+  }
+
+  sendResetLink(email: string) {
     return this.http.post(`${this.api}/forgotPassword`, { email: email });
   }
 
-  verifyOtp(token: string, password:string, newPassword: string) {
+  resetPassword(token: string, password: string) {
     return this.http.post(`${this.api}/resetPassword`, {
       token: token,
-      password: password,
-      newPassword: newPassword
+      password: password
     });
   }
 
