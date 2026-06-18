@@ -127,6 +127,19 @@
 </div>
 }
 @if(activeTab =='plNotes'){
+@if(plNotesLoading || plNotesError || plNotesLastSyncedAt){
+<div class="pl-status" [class.error]="plNotesError">
+    @if(plNotesLoading){
+    <span>Loading P&L Notes data...</span>
+    }
+    @if(!plNotesLoading && plNotesError){
+    <span>{{ plNotesError }}</span>
+    }
+    @if(!plNotesLoading && !plNotesError && plNotesLastSyncedAt){
+    <span>Loaded from cached P&L Notes data. Last synced: {{ plNotesLastSyncedAt | date:'medium' }}</span>
+    }
+</div>
+}
 <div class="modern-table-wrapper table-scroll">
     <table mat-table [dataSource]="dataSourcePlNotes" class="mat-elevation-z1">
 
@@ -195,6 +208,19 @@
 }
 
 @if(activeTab == 'additionalNotes'){
+@if(additionalNotesLoading || additionalNotesError || additionalNotesLastSyncedAt){
+<div class="pl-status" [class.error]="additionalNotesError">
+    @if(additionalNotesLoading){
+    <span>Loading Additional Notes data...</span>
+    }
+    @if(!additionalNotesLoading && additionalNotesError){
+    <span>{{ additionalNotesError }}</span>
+    }
+    @if(!additionalNotesLoading && !additionalNotesError && additionalNotesLastSyncedAt){
+    <span>Loaded from cached Additional Notes data. Last synced: {{ additionalNotesLastSyncedAt | date:'medium' }}</span>
+    }
+</div>
+}
 <div class="two-by-two-grid">
 
     <!-- Sundry Debtors -->
@@ -314,6 +340,19 @@
 }
 
 @if(activeTab=='plHrData'){
+@if(plHrDataLoading || plHrDataError || plHrDataLastSyncedAt){
+<div class="pl-status" [class.error]="plHrDataError">
+    @if(plHrDataLoading){
+    <span>Loading P&L HR data...</span>
+    }
+    @if(!plHrDataLoading && plHrDataError){
+    <span>{{ plHrDataError }}</span>
+    }
+    @if(!plHrDataLoading && !plHrDataError && plHrDataLastSyncedAt){
+    <span>Loaded from cached P&L HR data. Last synced: {{ plHrDataLastSyncedAt | date:'medium' }}</span>
+    }
+</div>
+}
 <div class="modern-table-wrapper table-scroll">
     <table mat-table [dataSource]="salaryData" class="mat-elevation-z8" sticky>
 

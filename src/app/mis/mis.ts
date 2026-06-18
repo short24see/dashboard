@@ -5,7 +5,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { MisPlRow, MisService } from '../services/mis';
+import { AdditionalValueRow, AgingRow, MisPlNotesRow, MisPlRow, MisService, PlHrDataRow } from '../services/mis';
 export interface ExpenseRow {
   type: 'section' | 'item' | 'total';
   particulars: string;
@@ -25,6 +25,15 @@ export class MIS implements OnInit {
   plLoading = false;
   plError = '';
   plLastSyncedAt = '';
+  plNotesLoading = false;
+  plNotesError = '';
+  plNotesLastSyncedAt = '';
+  additionalNotesLoading = false;
+  additionalNotesError = '';
+  additionalNotesLastSyncedAt = '';
+  plHrDataLoading = false;
+  plHrDataError = '';
+  plHrDataLastSyncedAt = '';
 
   constructor(private router: Router, private misService: MisService) {
 
@@ -32,6 +41,9 @@ export class MIS implements OnInit {
 
   ngOnInit(): void {
     this.loadPlData();
+    this.loadPlNotesData();
+    this.loadAdditionalNotesData();
+    this.loadPlHrData();
 
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -289,7 +301,7 @@ export class MIS implements OnInit {
   ];
 
   displayedPlNotesColumns = ['particulars', 'marAmount', 'aprAmount', 'mayAmount'];
-  dataSourcePlNotes: ExpenseRow[] = [
+  dataSourcePlNotes: MisPlNotesRow[] = [
 
     // =========================
     // 01 - Other Indirect Expenses
@@ -344,9 +356,29 @@ export class MIS implements OnInit {
 
   ];
 
+  private loadPlNotesData() {
+    this.plNotesLoading = true;
+    this.plNotesError = '';
+
+    this.misService.getPlNotes().subscribe({
+      next: (res) => {
+        if (Array.isArray(res.rows) && res.rows.length) {
+          this.dataSourcePlNotes = res.rows;
+          this.plNotesLastSyncedAt = res.lastSyncedAt;
+        }
+
+        this.plNotesLoading = false;
+      },
+      error: () => {
+        this.plNotesError = 'Unable to load live P&L Notes data. Showing cached fallback data.';
+        this.plNotesLoading = false;
+      }
+    });
+  }
+
   displayedAdditionalColumns = ['months', 'dec25'];;
 
-  sundryDebtorsData = [
+  sundryDebtorsData: AgingRow[] = [
     { months: '0-30 days', dec25: 9.10 },
     { months: '31-60 days', dec25: 5.50 },
     { months: '61-90 days', dec25: 3.22 },
@@ -355,7 +387,7 @@ export class MIS implements OnInit {
     { months: 'TOTAL', dec25: 18.30, total: true }
   ];
 
-  sundryCreditorsData = [
+  sundryCreditorsData: AgingRow[] = [
     { months: '0-30 days', dec25: 4.74 },
     { months: '31-60 days', dec25: 3.18 },
     { months: '61-90 days', dec25: 1.83 },
@@ -391,7 +423,7 @@ export class MIS implements OnInit {
 
   displayedNcaColumns = ['particulars', 'mar25'];
 
-  netCurrentAssetsData = [
+  netCurrentAssetsData: AdditionalValueRow[] = [
     { particulars: 'Bank Balance', mar25: 1.60 },
     { particulars: 'Stock', mar25: 5.25 },
     { particulars: 'Sundry Debtors', mar25: 18.30 },
@@ -418,7 +450,7 @@ export class MIS implements OnInit {
 
   displayedDutyColumns = ['particulars', 'mar25'];
 
-  dutyDrawbackData = [
+  dutyDrawbackData: AdditionalValueRow[] = [
     { particulars: 'DRAWBACK SHIPPING BILL (MUNDRA) - 25013', mar25: '-' },
     { particulars: 'DRAWBACK SHIPPING BILL (BOM) - 25005', mar25: '-' },
     { particulars: 'DRAWBACK SHIPPING BILL (DADRI) - 25011', mar25: '6,00,000.00' },
@@ -426,9 +458,32 @@ export class MIS implements OnInit {
     { particulars: 'Total', mar25: '19,33,984', total: true }
   ];
 
+  private loadAdditionalNotesData() {
+    this.additionalNotesLoading = true;
+    this.additionalNotesError = '';
+
+    this.misService.getAdditionalNotes().subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.sundryDebtorsData = Array.isArray(res.data.sundryDebtors) ? res.data.sundryDebtors : this.sundryDebtorsData;
+          this.sundryCreditorsData = Array.isArray(res.data.sundryCreditors) ? res.data.sundryCreditors : this.sundryCreditorsData;
+          this.netCurrentAssetsData = Array.isArray(res.data.netCurrentAssets) ? res.data.netCurrentAssets : this.netCurrentAssetsData;
+          this.dutyDrawbackData = Array.isArray(res.data.dutyDrawback) ? res.data.dutyDrawback : this.dutyDrawbackData;
+          this.additionalNotesLastSyncedAt = res.lastSyncedAt;
+        }
+
+        this.additionalNotesLoading = false;
+      },
+      error: () => {
+        this.additionalNotesError = 'Unable to load live Additional Notes data. Showing cached fallback data.';
+        this.additionalNotesLoading = false;
+      }
+    });
+  }
+
   displayedColumnsPlHr = ['particulars', 'company', 'dec25'];
 
-  salaryData = [
+  salaryData: PlHrDataRow[] = [
     {
       particulars: 'Contractor Workers’ Wages Cost - Prachi',
       company: 'Jayanita',
@@ -481,4 +536,24 @@ export class MIS implements OnInit {
       total: true
     }
   ];
+
+  private loadPlHrData() {
+    this.plHrDataLoading = true;
+    this.plHrDataError = '';
+
+    this.misService.getPlHrData().subscribe({
+      next: (res) => {
+        if (Array.isArray(res.rows) && res.rows.length) {
+          this.salaryData = res.rows;
+          this.plHrDataLastSyncedAt = res.lastSyncedAt;
+        }
+
+        this.plHrDataLoading = false;
+      },
+      error: () => {
+        this.plHrDataError = 'Unable to load live P&L HR data. Showing cached fallback data.';
+        this.plHrDataLoading = false;
+      }
+    });
+  }
 }
