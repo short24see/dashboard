@@ -1,6 +1,16 @@
 <!-- Net Current Assets -->
-<div class="headers">Net Current Assets (fig in Cr)</div>
+<div class="headers">
+    <div>
+        <div>Net Current Assets (fig in Cr)</div>
+        <span class="updated">Last updated: {{lastUpdated || 'Loading...'}}</span>
+    </div>
+    <button class="refresh-btn" (click)="loadNetCurrentAssets()" [disabled]="isLoading">
+        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+    </button>
+</div>
+<div class="status error" *ngIf="loadError">{{loadError}}</div>
 <div class="modern-table-wrapper table-scroll">
+    <div class="empty-state" *ngIf="!isLoading && !netCurrentAssetsData.length">No Net Current Assets data available.</div>
 
     <table mat-table [dataSource]="netCurrentAssetsData" class="modern-table" sticky>
 
@@ -12,11 +22,11 @@
             </td>
         </ng-container>
 
-        <!-- Mar-25 -->
-        <ng-container matColumnDef="mar25">
-            <th mat-header-cell *matHeaderCellDef>Dec-25</th>
+        <!-- Dec-25 -->
+        <ng-container matColumnDef="dec25">
+            <th mat-header-cell *matHeaderCellDef>{{period}}</th>
             <td mat-cell *matCellDef="let row" [class.total]="row.total">
-                {{ row.mar25 }}
+                {{ valueFor(row) }}
             </td>
         </ng-container>
 

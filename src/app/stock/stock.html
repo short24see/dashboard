@@ -1,8 +1,19 @@
-<div class="headers">Stock Monitoring Screen</div>
+<div class="headers">
+    <div>
+        <div>Stock Monitoring Screen</div>
+        <span class="updated">Last updated: {{lastUpdated || 'Loading...'}}</span>
+    </div>
+    <button class="refresh-btn" (click)="loadStock()" [disabled]="isLoading">
+        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+    </button>
+</div>
+<div class="status error" *ngIf="loadError">{{loadError}}</div>
 <div class="two-by-two-grid">
 
-    <!-- Sundry Debtors -->
+    <!-- Stock Summary -->
     <div class="modern-table-wrapper table-scroll">
+        <h3 class="table-title">Stock Summary</h3>
+        <div class="empty-state" *ngIf="!isLoading && !stockData.length">No stock summary data available.</div>
 
         <table mat-table [dataSource]="stockData" class="modern-table" sticky>
 
@@ -16,7 +27,7 @@
 
             <!-- Dec-25 -->
             <ng-container matColumnDef="dec25">
-                <th mat-header-cell *matHeaderCellDef>Dec-25</th>
+                <th mat-header-cell *matHeaderCellDef>{{period}}</th>
                 <td mat-cell *matCellDef="let row" [class.total]="row.total">
                     {{ row.dec25 }}
                 </td>
@@ -28,10 +39,12 @@
         </table>
     </div>
 
-    <!-- Sundry Creditors -->
+    <!-- Stock Aging -->
     <div class="modern-table-wrapper table-scroll">
+        <h3 class="table-title">Stock Aging</h3>
+        <div class="empty-state" *ngIf="!isLoading && !agingData.length">No stock aging data available.</div>
 
-        <table mat-table [dataSource]="AgingData" class="modern-table">
+        <table mat-table [dataSource]="agingData" class="modern-table">
 
             <!-- Months -->
             <ng-container matColumnDef="particulars">
@@ -43,7 +56,7 @@
 
             <!-- Dec-25 -->
             <ng-container matColumnDef="dec25">
-                <th mat-header-cell *matHeaderCellDef>Dec-25</th>
+                <th mat-header-cell *matHeaderCellDef>{{period}}</th>
                 <td mat-cell *matCellDef="let row" [class.total]="row.total">
                     {{ row.dec25 }}
                 </td>

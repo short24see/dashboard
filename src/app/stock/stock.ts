@@ -1,29 +1,61 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
+import { MisService, StockRow } from '../services/mis';
 
 @Component({
   selector: 'app-stock',
-  imports: [MatTableModule],
+  imports: [CommonModule, MatTableModule],
   templateUrl: './stock.html',
   styleUrl: './stock.less',
 })
-export class Stock {
-  displayedStockColumns = ['particulars', 'dec25'];;
+export class Stock implements OnInit {
+  displayedStockColumns = ['particulars', 'dec25'];
 
-  stockData = [
-    { particulars: 'Raw Material', dec25: 9.10 },
-    { particulars: 'Finish Goods', dec25: 5.50 },
-    { particulars: 'WIP', dec25: 3.22 },
-    { particulars: 'Job Work', dec25: 0.48 },
-    { particulars: 'Rejection', dec25: 0.00 },
-    { particulars: 'TOTAL', dec25: 18.30, total: true }
-  ];
+  stockData: StockRow[] = [];
+  agingData: StockRow[] = [];
+  period = 'Dec-25';
+  lastUpdated = '';
+  isLoading = false;
+  loadError = '';
 
-  AgingData = [
-    { particulars: '0-30 days', dec25: 4.74 },
-    { particulars: '31-90 days', dec25: 3.18 },
-    { particulars: '91-180 days', dec25: 1.83 },
-    { particulars: '181 days or more', dec25: 0.13 },
-    { particulars: 'TOTAL', dec25: 10.22, total: true }
-  ];
+  constructor(private misService: MisService) {}
+
+  ngOnInit() {
+    this.loadStock();
+  }
+
+  loadStock() {
+    this.isLoading = true;
+    this.loadError = '';
+
+    this.misService.getStock().subscribe({
+      next: (response) => {
+        this.period = response.period || this.period;
+        this.stockData = response.data?.stock || [];
+        this.agingData = response.data?.aging || [];
+        this.lastUpdated = this.formatDateTime(response.lastSyncedAt);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.loadError = 'Stock data is unavailable. Please try Refresh again.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private formatDateTime(value: string) {
+    if (!value) return 'Not available';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(date);
+  }
 }

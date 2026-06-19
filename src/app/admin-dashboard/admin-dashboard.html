@@ -4,11 +4,20 @@
     <div class="header">
         <div class="left">Financial Snapshot</div>
         <div class="right">
-            <span class="updated"><mat-icon class="refresh">schedule</mat-icon>Last updated: May 7, 2025 - 09:15 AM</span>
+            <label class="month-filter">
+                <span>Month</span>
+                <select [value]="selectedMonth" (change)="onMonthChange($event)">
+                    <option *ngFor="let month of availableMonths" [value]="month">{{month}}</option>
+                </select>
+            </label>
+            <span class="updated"><mat-icon class="refresh">schedule</mat-icon>Last updated: {{lastUpdated || 'Loading...'}}</span>
             <button class="nav-btn"><mat-icon class="refresh">save_alt</mat-icon>Download Board Pack</button>
-            <button class="nav-btn primary"><mat-icon class="refresh">autorenew</mat-icon>Refresh Data</button>
+            <button class="nav-btn primary" (click)="refreshData()" [disabled]="isLoading">
+                <mat-icon class="refresh">autorenew</mat-icon>{{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+            </button>
         </div>
     </div>
+    <div class="status error" *ngIf="loadError">{{loadError}}</div>
 
     <!-- Snapshot Cards -->
     <div class="snapshot">
@@ -25,12 +34,9 @@
             </div>
             <div class="change">
                 <span>
-                    <mat-icon *ngIf="i === 0" class="svg-icon-0">arrow_upward</mat-icon>
-                    <mat-icon *ngIf="i === 1" class="svg-icon-1">arrow_upward</mat-icon>
-                    <mat-icon *ngIf="i === 2" class="svg-icon-2">arrow_downward</mat-icon>
-                    <mat-icon *ngIf="i === 3" class="svg-icon-3">arrow_upward</mat-icon>
+                    <mat-icon [ngClass]="card.trend === 'down' ? 'trend-down' : 'trend-up'">{{trendIcon(card)}}</mat-icon>
                 </span>
-                <span [attr.data-index]="i">{{card.change}}</span>
+                <span [attr.data-index]="i" [class.trend-down-text]="card.trend === 'down'">{{card.change}}</span>
                 <span class="subtitle">{{card.subtitle}}</span>
             </div>
         </div>
@@ -61,13 +67,14 @@
             </div>
             <div class="alerts-content">
                 <h4 class="alerts-subheader">Overdue Receivables (Top 5)</h4>
-                <div class="alert-card" *ngFor="let item of [1,2,3,4,5]">
+                <div class="empty-state" *ngIf="!overdueReceivables.length">No overdue receivables for {{selectedMonth}}.</div>
+                <div class="alert-card" *ngFor="let item of overdueReceivables">
                     <div class="alert-title">
                         <div>
-                            <p class="title1 title2">TechNova Solutions</p>
-                            <p class="title1">INV-2023-421 · 15 days overdue</p>
+                            <p class="title1 title2">{{item.name}}</p>
+                            <p class="title1">{{item.invoiceNumber}} · {{item.overdueDays}} days overdue</p>
                         </div>
-                        <div class="amount">₹25,000</div>
+                        <div class="amount">₹{{item.amount | number}}</div>
                     </div>
                     <div class="actions">
                         <button class="btn-first">Mark Paid</button>

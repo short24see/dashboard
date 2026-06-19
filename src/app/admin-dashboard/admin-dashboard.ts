@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective, provideCharts } from 'ng2-charts';
 import {
@@ -16,7 +16,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { verticalHoverPlugin } from '../plugins/chart-plugin';
-import { TopNavbar } from "../top-navbar/top-navbar";
+import {
+  DashboardPayable,
+  DashboardReceivable,
+  DashboardSnapshotCard,
+  MisDashboardResponse,
+  MisService
+} from '../services/mis';
+
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -35,58 +42,31 @@ Chart.register(
     BaseChartDirective,
     MatCardModule,
     MatButtonModule,
-    MatIconModule,
-],
+    MatIconModule
+  ],
   providers: [provideCharts()],
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.less']
 })
-export class AdminDashboard {
-  upcomingPayables = [
-    { name: 'Office Supplies Inc.', poNumber: 'PO-2023-187', dueIn: 2, amount: 3200 },
-    { name: 'Cloud Services Ltd.', poNumber: 'PO-2023-192', dueIn: 3, amount: 15000 },
-    { name: 'Marketing Partners', poNumber: 'PO-2023-195', dueIn: 4, amount: 8750 },
-    { name: 'IT Infrastructure Co.', poNumber: 'PO-2023-198', dueIn: 5, amount: 22000 },
-    { name: 'Business Insurance', poNumber: 'PO-2023-203', dueIn: 7, amount: 12500 }
-  ];
+export class AdminDashboard implements OnInit {
+  availableMonths: string[] = [];
+  selectedMonth = '';
+  lastUpdated = '';
+  isLoading = false;
+  loadError = '';
 
-  snapshotCards = [
-    {
-      title: 'Net Profit',
-      value: '₹ 4,25,78,000',
-      change: '3.2%',
-      subtitle: ' vs. previous day',
-      color: 'blue',
-      icon: 'attach_money'
-    },
-    {
-      title: 'Cash Profit',
-      value: '37 weeks',
-      change: '2 weeks',
-      subtitle: ' vs. previous month',
-      color: 'green',
-      icon: 'calendar_today'
-    },
-    {
-      title: 'EBIDTA',
-      value: '₹ 73,50,000',
-      change: '8.5%',
-      subtitle: ' vs. previous week',
-      color: 'orange',
-      icon: 'error_outline'
-    },
-    {
-      title: 'Gross Profit',
-      value: '₹ 61,45,000',
-      change: '12.3%',
-      subtitle: ' vs. previous week',
-      color: 'purple',
-      icon: 'email'
-    },
-    { title: 'Sales', value: '₹18,20,000', icon: 'payments', change: '5.1%', subtitle: 'vs last week', color: 'teal' },
-    { title: 'Receivables', value: '₹12,80,000', icon: 'credit_card', change: '2.4%', subtitle: 'vs last week', color: 'pink' },
-    { title: 'Purchase', value: '₹12467', icon: 'description', change: '9%', subtitle: 'vs last month', color: 'indigo' },
-    { title: 'Payables', value: '₹96990/mo', icon: 'currency_rupee', change: '1.2%', subtitle: 'vs last month', color: 'lime' }
+  overdueReceivables: DashboardReceivable[] = [];
+  upcomingPayables: DashboardPayable[] = [];
+
+  snapshotCards: DashboardSnapshotCard[] = [
+    { title: 'Net Profit', value: '₹ 4,25,78,000', change: '3.2%', subtitle: 'vs. previous month', color: 'blue', icon: 'attach_money', trend: 'up' },
+    { title: 'Cash Profit', value: '₹ 37,00,000', change: '2%', subtitle: 'vs. previous month', color: 'green', icon: 'calendar_today', trend: 'up' },
+    { title: 'EBIDTA', value: '₹ 73,50,000', change: '8.5%', subtitle: 'vs. previous month', color: 'orange', icon: 'error_outline', trend: 'down' },
+    { title: 'Gross Profit', value: '₹ 61,45,000', change: '12.3%', subtitle: 'vs. previous month', color: 'purple', icon: 'email', trend: 'up' },
+    { title: 'Sales', value: '₹18,20,000', icon: 'payments', change: '5.1%', subtitle: 'vs. previous month', color: 'teal', trend: 'up' },
+    { title: 'Receivables', value: '₹12,80,000', icon: 'credit_card', change: '2.4%', subtitle: 'vs. previous month', color: 'pink', trend: 'up' },
+    { title: 'Purchase', value: '₹12,467', icon: 'description', change: '9%', subtitle: 'vs. previous month', color: 'indigo', trend: 'up' },
+    { title: 'Payables', value: '₹96,990/mo', icon: 'currency_rupee', change: '1.2%', subtitle: 'vs. previous month', color: 'lime', trend: 'down' }
   ];
 
   barChartType: ChartType = 'bar';
@@ -134,17 +114,14 @@ export class AdminDashboard {
   barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-
     interaction: {
       mode: 'index',
       intersect: false
     },
-
     scales: {
       y: {
         min: -140000,
         max: 140000,
-
         ticks: {
           stepSize: 70000,
           callback: (value: string | number) => {
@@ -161,24 +138,20 @@ export class AdminDashboard {
           color: '#6B7280',
           font: { size: 12 }
         },
-
         grid: {
           color: '#E5E7EB',
-          // Type cast fixes the TS error
           ...({ borderDash: [4, 4] } as any)
         },
-
         border: {
-          display: false   // removes vertical Y axis line
+          display: false
         }
       },
-
       x: {
         ticks: {
           color: '#6B7280',
           font: { size: 12 },
-          callback: function (value, index) {
-            return `Week${index + 1}`;   // Week1, Week2, Week3, ...
+          callback: function (_value, index) {
+            return `Week${index + 1}`;
           }
         },
         grid: {
@@ -186,7 +159,6 @@ export class AdminDashboard {
         }
       }
     },
-
     plugins: {
       tooltip: {
         backgroundColor: '#ffffff',
@@ -196,7 +168,7 @@ export class AdminDashboard {
         bodyColor: '#111827',
         cornerRadius: 8,
         padding: 14,
-        displayColors: false,   // show color indicator
+        displayColors: false,
         titleFont: {
           size: 16,
           weight: 600
@@ -206,26 +178,21 @@ export class AdminDashboard {
           weight: 500
         },
         callbacks: {
-          title: (items) => {
-            return items[0].label; // Week name
-          },
-
+          title: (items) => items[0].label,
           label: (context) => {
             const value = context.raw as number;
             const label = context.dataset.label || '';
 
-            return `${label}: ₹${Math.abs(value).toLocaleString()}`;
+            return `${label}: ₹${Math.abs(value).toLocaleString('en-IN')}`;
           },
-
           labelTextColor: (context) => {
             const label = context.dataset.label;
 
-            if (label === 'Inflow') return '#22C55E';   // green
-            if (label === 'Outflow') return '#EF4444';  // red
-            if (label === 'Net') return '#3B82F6';      // blue
+            if (label === 'Inflow') return '#22C55E';
+            if (label === 'Outflow') return '#EF4444';
+            if (label === 'Net') return '#3B82F6';
             return '#111827';
           },
-
           labelColor: (context) => {
             const label = context.dataset.label;
 
@@ -242,7 +209,6 @@ export class AdminDashboard {
           }
         }
       },
-
       legend: {
         position: 'bottom',
         labels: {
@@ -253,7 +219,78 @@ export class AdminDashboard {
         }
       }
     }
-
   };
 
+  constructor(private misService: MisService) {}
+
+  ngOnInit() {
+    this.loadDashboard();
+  }
+
+  loadDashboard(month = this.selectedMonth) {
+    this.isLoading = true;
+    this.loadError = '';
+
+    this.misService.getDashboard(month).subscribe({
+      next: (dashboard) => {
+        this.applyDashboard(dashboard);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.loadError = 'Dashboard data is unavailable. Showing the last local values.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onMonthChange(event: Event) {
+    const month = (event.target as HTMLSelectElement).value;
+    this.selectedMonth = month;
+    this.loadDashboard(month);
+  }
+
+  refreshData() {
+    this.loadDashboard(this.selectedMonth);
+  }
+
+  trendIcon(card: DashboardSnapshotCard) {
+    if (card.trend === 'down') return 'arrow_downward';
+    if (card.trend === 'flat') return 'remove';
+    return 'arrow_upward';
+  }
+
+  private applyDashboard(dashboard: MisDashboardResponse) {
+    this.availableMonths = dashboard.periods || [];
+    this.selectedMonth = dashboard.selectedMonth || this.availableMonths[this.availableMonths.length - 1] || '';
+    this.lastUpdated = this.formatDateTime(dashboard.updatedAt || dashboard.lastSyncedAt);
+    this.snapshotCards = dashboard.snapshotCards?.length ? dashboard.snapshotCards : this.snapshotCards;
+    this.overdueReceivables = dashboard.overdueReceivables || [];
+    this.upcomingPayables = dashboard.upcomingPayables || [];
+
+    if (dashboard.cashFlow) {
+      this.barChartData = {
+        labels: dashboard.cashFlow.labels,
+        datasets: [
+          { ...this.barChartData.datasets[0], data: dashboard.cashFlow.inflow },
+          { ...this.barChartData.datasets[1], data: dashboard.cashFlow.net },
+          { ...this.barChartData.datasets[2], data: dashboard.cashFlow.outflow }
+        ]
+      };
+    }
+  }
+
+  private formatDateTime(value: string) {
+    if (!value) return 'Not available';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(date);
+  }
 }

@@ -1,11 +1,21 @@
 <!-- bom.component.html -->
 
-<div class="headers">BOM Monitoring Screen</div>
+<div class="headers">
+    <div>
+        <div>BOM Monitoring Screen</div>
+        <span class="updated">Last updated: {{lastUpdated || 'Loading...'}}</span>
+    </div>
+    <button class="refresh-btn" (click)="loadBom()" [disabled]="isLoading">
+        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+    </button>
+</div>
+<div class="status error" *ngIf="loadError">{{loadError}}</div>
 <div class="two-by-two-grid">
 
     <!-- Sundry Debtors -->
     <div class="modern-table-wrapper table-scroll">
         <h3 class="table-title">Freeze</h3>
+        <div class="empty-state" *ngIf="!isLoading && !freezeData.length">No freeze BOM data available.</div>
         <table mat-table [dataSource]="freezeData" class="modern-table" sticky>
 
             <ng-container matColumnDef="mainPart">
@@ -47,6 +57,7 @@
     <!-- Sundry Creditors -->
     <div class="modern-table-wrapper table-scroll">
         <h3 class="table-title">Dynamic</h3>
+        <div class="empty-state" *ngIf="!isLoading && !dynamicData.length">No dynamic BOM data available.</div>
         <table mat-table [dataSource]="dynamicData" class="modern-table">
 
             <ng-container matColumnDef="mainPart">

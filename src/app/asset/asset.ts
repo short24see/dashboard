@@ -1,37 +1,63 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
+import { AdditionalValueRow, MisService } from '../services/mis';
 
 @Component({
   selector: 'app-asset',
-  imports: [MatTableModule],
+  imports: [CommonModule, MatTableModule],
   templateUrl: './asset.html',
   styleUrl: './asset.less',
 })
-export class Asset {
-   displayedNcaColumns = ['particulars', 'mar25'];
+export class Asset implements OnInit {
+  displayedNcaColumns = ['particulars', 'dec25'];
 
-  netCurrentAssetsData = [
-    { particulars: 'Bank Balance', mar25: 1.60 },
-    { particulars: 'Stock', mar25: 5.25 },
-    { particulars: 'Sundry Debtors', mar25: 18.30 },
-    { particulars: 'GST Refund', mar25: 2.76 },
-    { particulars: 'Advances', mar25: 1.54 },
-    { particulars: 'Mutual Fund', mar25: 1.00 },
-    { particulars: 'Duty Drawback', mar25: 0.19 },
+  netCurrentAssetsData: AdditionalValueRow[] = [];
+  period = 'Dec-25';
+  lastUpdated = '';
+  isLoading = false;
+  loadError = '';
 
-    { particulars: 'JEPL 2400 FD Ag Sidbi loan', mar25: 1.00 },
-    { particulars: 'JEPL 2200 receivable Ag Sidbi loan', mar25: 1.00 },
+  constructor(private misService: MisService) {}
 
-    { particulars: 'JAYANITA payables', mar25: -0.83 },
-    { particulars: 'Sundry Creditors', mar25: -10.22 },
-    { particulars: 'Limits Used - BILL Disc', mar25: -4.44 },
-    { particulars: 'Limits Used - OD', mar25: -1.95 },
-    { particulars: 'SIDBI Loan', mar25: -1.85 },
-    { particulars: 'PC Loan', mar25: -3.07 },
+  ngOnInit() {
+    this.loadNetCurrentAssets();
+  }
 
-    { particulars: 'Advances Payment', mar25: 0.08 },
-    { particulars: 'Self assessment tax', mar25: 0.00 },
+  loadNetCurrentAssets() {
+    this.isLoading = true;
+    this.loadError = '';
 
-    { particulars: 'Net Current Asset', mar25: 10.36, total: true }
-  ];
+    this.misService.getNetCurrentAssets().subscribe({
+      next: (response) => {
+        this.period = response.period || this.period;
+        this.netCurrentAssetsData = response.rows || [];
+        this.lastUpdated = this.formatDateTime(response.lastSyncedAt);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.loadError = 'Net Current Assets data is unavailable. Please try Refresh again.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  valueFor(row: AdditionalValueRow) {
+    return row.dec25 ?? row.mar25 ?? '';
+  }
+
+  private formatDateTime(value: string) {
+    if (!value) return 'Not available';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(date);
+  }
 }
