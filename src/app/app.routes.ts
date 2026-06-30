@@ -3,19 +3,17 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
 import { MIS } from './mis/mis';
 import { Configuration } from './configuration/configuration';
 import { TopNavbar } from './top-navbar/top-navbar';
-import { login } from './login/login';
 import { Stock } from './stock/stock';
 import { Asset } from './asset/asset';
 import { Bom } from './bom/bom';
-import { authGuard } from './guards/auth.guard';
+import { OneDrive } from './onedrive/onedrive';
 
 export const routes: Routes = [
-    { path: 'login', component: login },
-    { path: 'resetPassword', component: login },
+    { path: 'login', redirectTo: 'dashboard', pathMatch: 'full' },
+    { path: 'resetPassword', redirectTo: 'dashboard', pathMatch: 'full' },
     {
         path: '',
         component: TopNavbar,
-        canActivate: [authGuard],
         children: [
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             { path: 'dashboard', component: AdminDashboard },
@@ -28,8 +26,9 @@ export const routes: Routes = [
             { path: 'stock', component: Stock },
             { path: 'bom', component: Bom },
             { path: 'asset', component: Asset },
+            { path: 'onedrive', component: OneDrive },
             { path: 'configuration', component: Configuration }
         ]
     },
-    { path: '**', component: login }
+    { path: '**', redirectTo: 'dashboard' }
 ];

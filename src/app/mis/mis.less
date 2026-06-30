@@ -121,6 +121,93 @@ td {
     color: #b91c1c;
 }
 
+.particular-header-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.particular-header-tools button {
+    min-height: 32px;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 5px 12px;
+}
+
+.particular-header-tools button:disabled {
+    cursor: wait;
+    opacity: 0.75;
+}
+
+.month-date-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.date-header {
+    overflow: hidden;
+    padding: 8px 10px;
+}
+
+.date-header label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    min-width: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.date-header input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #111827;
+    font: inherit;
+    font-size: 12px;
+    padding: 5px 6px;
+}
+
+.skeleton-cell {
+    display: inline-block;
+    width: 92px;
+    height: 16px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-cell.short {
+    width: 52px;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0 50%;
+    }
+}
+
 /* Slightly stronger divider for header */
 th.particular-col {
     border-right: 2px solid #e5e7eb;

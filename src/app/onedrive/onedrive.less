@@ -1,0 +1,282 @@
+.onedrive-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  color: #111827;
+}
+
+.page-header,
+.panel-heading,
+.sync-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+p,
+small {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.section-band {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+input,
+select {
+  min-height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #111827;
+  font: inherit;
+  padding: 7px 9px;
+}
+
+.button-row {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+button {
+  font: inherit;
+}
+
+.primary-btn,
+.secondary-btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+
+.primary-btn {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.secondary-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.account-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+}
+
+.account-row.active,
+.file-row.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.breadcrumb button {
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.file-table {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  overflow: auto;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 90px 90px 130px;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  padding: 8px;
+  text-align: left;
+}
+
+.file-row.table-head {
+  color: #64748b;
+  cursor: default;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.file-row.disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-panel {
+  justify-content: flex-start;
+}
+
+.sync-panel label {
+  min-width: 220px;
+}
+
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  min-width: auto;
+}
+
+.checkbox-label input {
+  min-height: auto;
+}
+
+.status-bar {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 12px 14px;
+}
+
+.status-bar.error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.empty-state {
+  color: #64748b;
+  padding: 20px 8px;
+}
+
+.preview-table {
+  margin-top: 14px;
+  overflow: auto;
+}
+
+.preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.preview-table th,
+.preview-table td {
+  border-bottom: 1px solid #eef2f7;
+  padding: 9px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.preview-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .form-grid,
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sync-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -50,6 +50,9 @@ export class TopNavbar implements OnInit {
       else if (url.startsWith('/asset')) {
         this.activeNav = 'asset';
       }
+      else if (url.startsWith('/onedrive')) {
+        this.activeNav = 'onedrive';
+      }
       else if (url.startsWith('/configuration')) {
         this.activeNav = 'configuration';
       }
@@ -64,12 +67,13 @@ export class TopNavbar implements OnInit {
   }
 
   logout(){
-    this.loginService.logout();
+    this.loginService.clearInvalidSession();
+    this.router.navigate(['/dashboard']);
   }
 
   private loadCurrentUser() {
     const user = this.loginService.getCurrentUser();
-    const email = user.email || 'Unknown email';
+    const email = user.email || 'client@local';
     const fallbackName = email.includes('@') ? email.split('@')[0] : 'User';
 
     this.userEmail = email;

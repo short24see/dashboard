@@ -86,6 +86,16 @@
         <div class="nav-divider"></div>
 
         <div class="nav-section">
+            <button class="nav-item nav-title active" routerLink="/onedrive" routerLinkActive="active"
+                [class.active]="activeNav === 'onedrive'" (click)="setActive('onedrive')">
+                <span class="nav-title-text">
+                    <mat-icon>cloud</mat-icon>OneDrive</span>
+            </button>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-section">
             <button class="nav-item nav-title active" routerLink="/configuration" routerLinkActive="active"
                 [class.active]="activeNav === 'configuration'" (click)="setActive('configuration')">
                 <span class="nav-title-text">

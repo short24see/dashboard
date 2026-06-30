@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { AdditionalValueRow, AgingRow, MisPlNotesRow, MisPlRow, MisService, PlHrDataRow } from '../services/mis';
+import { AdditionalValueRow, AgingRow, JdeDirectIncomeRow, JdePurchaseReceiptRow, JdeSupplierLedgerRow, MisPlNotesRow, MisPlRow, MisService, PlHrDataRow } from '../services/mis';
 export interface ExpenseRow {
   type: 'section' | 'item' | 'total';
   particulars: string;
@@ -16,7 +18,7 @@ export interface ExpenseRow {
 }
 @Component({
   selector: 'app-mis',
-  imports: [MatTabsModule, MatTableModule, CommonModule],
+  imports: [MatTabsModule, MatTableModule, CommonModule, FormsModule],
   templateUrl: './mis.html',
   styleUrl: './mis.less',
 })
@@ -34,6 +36,47 @@ export class MIS implements OnInit {
   plHrDataLoading = false;
   plHrDataError = '';
   plHrDataLastSyncedAt = '';
+  jdeDirectIncomeLoading = false;
+  jdeDirectIncomeMonthLoading: Record<'mar' | 'apr' | 'may', boolean> = {
+    mar: false,
+    apr: false,
+    may: false
+  };
+  jdeDirectIncomeError = '';
+  jdeDirectIncomeStatus = '';
+  jdeDirectIncomeMarFromDate = '2024-03-05';
+  jdeDirectIncomeMarToDate = '2024-04-05';
+  jdeDirectIncomeAprFromDate = '2024-04-05';
+  jdeDirectIncomeAprToDate = '2024-05-05';
+  jdeDirectIncomeMayFromDate = '2024-05-05';
+  jdeDirectIncomeMayToDate = '2024-06-05';
+  jdeTargetMonth: 'mar' | 'apr' | 'may' = 'may';
+  jdeSupplierLedgerLoading = false;
+  jdeSupplierLedgerError = '';
+  jdeSupplierLedgerStatus = '';
+  jdeSupplierAccount = 'JAY002.7313';
+  jdeSupplierFromDate = '01/04/22';
+  jdeSupplierThruDate = '31/03/23';
+  jdeSupplierAddressNumber = '36731';
+  jdeSupplierTargetRow = 'Manufacturing Wages (Prachi)';
+  jdePurchaseReceiptLoading = false;
+  jdePurchaseReceiptError = '';
+  jdePurchaseReceiptStatus = '';
+  jdePurchaseFromDate = '22/04/20';
+  jdePurchaseToDate = '22/04/24';
+  jdePurchaseBusinessUnit = '4000';
+  jdePurchaseOrderTypes = 'OT';
+  jdePurchaseTargetRow = 'RM Purchase EPIP';
+  private directIncomeMappings = [
+    { particular: 'Ikea', accountNumber: '2400.6060', customerCode: 22073 },
+    { particular: 'Lamplight', accountNumber: '2400.6060', customerCode: 21298 },
+    { particular: 'LG Sourcing', accountNumber: '2400.6060', customerCode: 22637 },
+    { particular: 'Zenith Home Corp.', accountNumber: '2400.6060', customerCode: 22357 },
+    { particular: 'Rev-A-Shelf, LLC.', accountNumber: '2400.6060', customerCode: 22611 },
+    { particular: 'Sales Domestic Local', accountNumber: '2400.6040' },
+    { particular: 'Sales Scrap', accountNumber: '2400.6050' },
+    { particular: 'Interbranch Transfers', accountNumber: '2400.6065' }
+  ];
 
   constructor(private router: Router, private misService: MisService) {
 
@@ -277,8 +320,360 @@ export class MIS implements OnInit {
     });
   }
 
+  loadDirectIncomeFromJde(month?: 'mar' | 'apr' | 'may') {
+    this.jdeDirectIncomeError = '';
+    this.jdeDirectIncomeStatus = '';
+
+    if (month && this.jdeDirectIncomeMonthLoading[month]) {
+      return;
+    }
+
+    if (!month && this.jdeDirectIncomeLoading) {
+      return;
+    }
+
+    const periods = month
+      ? this.getDirectIncomePeriods().filter(period => period.month === month)
+      : this.getDirectIncomePeriods();
+
+    if (periods.some(period => !period.fromDate || !period.toDate)) {
+      this.jdeDirectIncomeError = 'Select Direct Income from and to dates before loading.';
+      return;
+    }
+
+    if (month) {
+      this.jdeDirectIncomeMonthLoading[month] = true;
+    } else {
+      this.jdeDirectIncomeLoading = true;
+      this.jdeDirectIncomeMonthLoading = { mar: true, apr: true, may: true };
+    }
+
+    this.jdeDirectIncomeStatus = '';
+    const accountNumbers = ['2400.6060', '2400.6040', '2400.6050', '2400.6065'];
+    const requests = periods.flatMap(period =>
+      accountNumbers.map(accountNumber =>
+        this.misService.getJdeDirectIncome({
+          fromDate: this.toJdeDate(period.fromDate),
+          toDate: this.toJdeDate(period.toDate),
+          accountNumber,
+          username: '',
+          password: ''
+        })
+      )
+    );
+
+    forkJoin(requests).subscribe({
+      next: (response) => {
+        const responseRowsByPeriod = new Map<string, Map<string, JdeDirectIncomeRow[]>>();
+
+        response.forEach((item, index) => {
+          const period = periods[Math.floor(index / accountNumbers.length)];
+          const accountNumber = accountNumbers[index % accountNumbers.length];
+          const rows = item.ServiceRequest2?.fs_DATABROWSE_F0911?.data?.gridData?.rowset || [];
+          const rowsByAccount = responseRowsByPeriod.get(period.month) || new Map<string, JdeDirectIncomeRow[]>();
+
+          rowsByAccount.set(accountNumber, rows);
+          responseRowsByPeriod.set(period.month, rowsByAccount);
+        });
+
+        this.dataSource = this.replaceDirectIncomeForMonths(this.dataSource, responseRowsByPeriod, periods.map(period => period.month));
+        this.jdeDirectIncomeStatus = 'Direct Income loaded from JDE.';
+        this.clearDirectIncomeLoading(month);
+      },
+      error: (error) => {
+        this.jdeDirectIncomeError = error?.status === 0
+          ? 'Unable to call JDE from browser. Check client network, CORS, and JDE API access.'
+          : 'Unable to load Direct Income from JDE.';
+        this.clearDirectIncomeLoading(month);
+      }
+    });
+  }
+
+  private clearDirectIncomeLoading(month?: 'mar' | 'apr' | 'may') {
+    if (month) {
+      this.jdeDirectIncomeMonthLoading[month] = false;
+    } else {
+      this.jdeDirectIncomeLoading = false;
+      this.jdeDirectIncomeMonthLoading = { mar: false, apr: false, may: false };
+    }
+  }
+
+  private getDirectIncomePeriods(): Array<{ month: 'mar' | 'apr' | 'may'; fromDate: string; toDate: string }> {
+    return [
+      { month: 'mar', fromDate: this.jdeDirectIncomeMarFromDate, toDate: this.jdeDirectIncomeMarToDate },
+      { month: 'apr', fromDate: this.jdeDirectIncomeAprFromDate, toDate: this.jdeDirectIncomeAprToDate },
+      { month: 'may', fromDate: this.jdeDirectIncomeMayFromDate, toDate: this.jdeDirectIncomeMayToDate }
+    ];
+  }
+
+  private sumJdeRows(rows: JdeDirectIncomeRow[], accountNumber: string, customerCode?: number) {
+    return rows.reduce((sum, row) => {
+      const accountMatches = String(row.F0911_ANI || '').trim() === accountNumber;
+      const customerMatches = !customerCode || Number(row.F0911_AN8) === customerCode;
+      const amount = Number(row.F0911_AA);
+
+      return accountMatches && customerMatches && Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
+  }
+
+  loadSupplierLedgerFromJde() {
+    this.jdeSupplierLedgerError = '';
+    this.jdeSupplierLedgerStatus = '';
+
+    if (!this.jdeSupplierFromDate || !this.jdeSupplierThruDate || !this.jdeSupplierAccount || !this.jdeSupplierAddressNumber) {
+      this.jdeSupplierLedgerError = 'Enter date, account, and address number before loading Supplier Ledger.';
+      return;
+    }
+
+    this.jdeSupplierLedgerLoading = true;
+    this.misService.getJdeSupplierLedger({
+      account: this.jdeSupplierAccount,
+      fromDate: this.jdeSupplierFromDate,
+      thruDate: this.jdeSupplierThruDate,
+      addressNumber: this.jdeSupplierAddressNumber,
+      username: '',
+      password: ''
+    }).subscribe({
+      next: (response) => {
+        const rows = response.ServiceRequest1?.forms?.[0]?.fs_P09200_W09200A?.data?.gridData?.rowset || [];
+        const amount = this.sumSupplierLedgerRows(rows, this.jdeSupplierAddressNumber);
+
+        this.dataSource = this.upsertCostOfGoodsRow(this.dataSource, this.jdeSupplierTargetRow, amount);
+        this.jdeSupplierLedgerStatus = `Loaded Supplier Ledger from JDE. ${this.jdeSupplierTargetRow}: ${this.formatAmount(amount)}. Rows: ${rows.length}.`;
+        this.jdeSupplierLedgerLoading = false;
+      },
+      error: (error) => {
+        this.jdeSupplierLedgerError = error?.status === 0
+          ? 'Unable to call JDE from browser. Check client network, CORS, and JDE API access.'
+          : 'Unable to load Supplier Ledger from JDE.';
+        this.jdeSupplierLedgerLoading = false;
+      }
+    });
+  }
+
+  private sumSupplierLedgerRows(rows: JdeSupplierLedgerRow[], addressNumber: string) {
+    return rows.reduce((sum, row) => {
+      const addressMatches = Number(row.z_AN8_38) === Number(addressNumber);
+      const amount = Number(row.z_AA_22);
+
+      return addressMatches && Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
+  }
+
+  loadPurchaseReceiptFromJde() {
+    this.jdePurchaseReceiptError = '';
+    this.jdePurchaseReceiptStatus = '';
+
+    const orderTypes = this.getPurchaseOrderTypes();
+    if (!this.jdePurchaseFromDate || !this.jdePurchaseToDate || !this.jdePurchaseBusinessUnit || !orderTypes.length) {
+      this.jdePurchaseReceiptError = 'Enter date, business unit, and order type before loading Purchase Receipt.';
+      return;
+    }
+
+    this.jdePurchaseReceiptLoading = true;
+    const requests = orderTypes.map(orderType => this.misService.getJdePurchaseReceipt({
+      fromDate: this.jdePurchaseFromDate,
+      toDate: this.jdePurchaseToDate,
+      businessUnit: this.jdePurchaseBusinessUnit,
+      orderType,
+      username: '',
+      password: ''
+    }));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const rows = responses.flatMap(response => response.ServiceRequest1?.fs_DATABROWSE_V43121A?.data?.gridData?.rowset || []);
+        const amount = this.sumPurchaseReceiptRows(rows);
+
+        this.dataSource = this.upsertCostOfGoodsRow(this.dataSource, this.jdePurchaseTargetRow, amount);
+        this.jdePurchaseReceiptStatus = `Loaded Purchase Receipt from JDE. ${this.jdePurchaseTargetRow}: ${this.formatAmount(amount)}. Rows: ${rows.length}.`;
+        this.jdePurchaseReceiptLoading = false;
+      },
+      error: (error) => {
+        this.jdePurchaseReceiptError = error?.status === 0
+          ? 'Unable to call JDE from browser. Check client network, CORS, and JDE API access.'
+          : 'Unable to load Purchase Receipt from JDE.';
+        this.jdePurchaseReceiptLoading = false;
+      }
+    });
+  }
+
+  private getPurchaseOrderTypes() {
+    return this.jdePurchaseOrderTypes
+      .split(',')
+      .map(orderType => orderType.trim())
+      .filter(Boolean);
+  }
+
+  private sumPurchaseReceiptRows(rows: JdePurchaseReceiptRow[]) {
+    return rows.reduce((sum, row) => {
+      const openAmount = Number(row.F43121_AOPN);
+      const receivedAmount = Number(row.F43121_AREC);
+      const amount = (Number.isFinite(openAmount) ? openAmount : 0) + (Number.isFinite(receivedAmount) ? receivedAmount : 0);
+
+      return sum + amount;
+    }, 0);
+  }
+
+  private upsertCostOfGoodsRow(rows: MisPlRow[], particular: string, amount: number) {
+    const amountKey = `${this.jdeTargetMonth}Amount` as keyof MisPlRow;
+    const ratioKey = `${this.jdeTargetMonth}Ratio` as keyof MisPlRow;
+    const totalDirectIncome = this.getAmountForParticular(rows, 'Total Direct Income', amountKey);
+    const aliases = particular === 'Manufacturing Wages (Prachi)'
+      ? ['Manufacturing Wages (Prachi)', 'Manufacturing Wages']
+      : [particular];
+    const rowIndex = rows.findIndex(row => aliases.includes(row.particular));
+    const updatedRow: MisPlRow = {
+      particular,
+      [amountKey]: this.formatAmount(amount),
+      [ratioKey]: this.formatRatio(amount, totalDirectIncome)
+    };
+
+    if (rowIndex !== -1) {
+      return rows.map((row, index) => index === rowIndex ? { ...row, ...updatedRow } : row);
+    }
+
+    const totalCostIndex = rows.findIndex(row => row.total && row.particular === 'Total Cost of Goods');
+    if (totalCostIndex === -1) {
+      return [...rows, updatedRow];
+    }
+
+    return [
+      ...rows.slice(0, totalCostIndex),
+      updatedRow,
+      ...rows.slice(totalCostIndex)
+    ];
+  }
+
+  private getAmountForParticular(rows: MisPlRow[], particular: string, amountKey: keyof MisPlRow) {
+    const row = rows.find(item => item.particular === particular);
+    const rawAmount = row?.[amountKey];
+
+    if (typeof rawAmount === 'number') return rawAmount;
+    if (typeof rawAmount !== 'string') return 0;
+
+    const amount = Number(rawAmount.replace(/,/g, ''));
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  private replaceDirectIncomeSection(rows: MisPlRow[], directIncomeRows: Array<{ particular: string; amount: number }>, totalDirectIncome: number) {
+    const directIncomeIndex = rows.findIndex(row => row.section && row.particular === 'Direct Income');
+    const indirectIncomeIndex = rows.findIndex(row => row.section && row.particular === 'Indirect Income');
+    const amountKey = `${this.jdeTargetMonth}Amount` as keyof MisPlRow;
+    const ratioKey = `${this.jdeTargetMonth}Ratio` as keyof MisPlRow;
+    const insertRows: MisPlRow[] = [
+      ...directIncomeRows.map(row => ({
+        particular: row.particular,
+        [amountKey]: this.formatAmount(row.amount),
+        [ratioKey]: this.formatRatio(row.amount, totalDirectIncome)
+      })),
+      {
+        particular: 'Total Direct Income',
+        [amountKey]: this.formatAmount(totalDirectIncome),
+        total: true
+      }
+    ];
+
+    if (directIncomeIndex === -1) {
+      return [{ particular: 'Direct Income', section: true }, ...insertRows, ...rows];
+    }
+
+    return [
+      ...rows.slice(0, directIncomeIndex + 1),
+      ...insertRows,
+      ...rows.slice(indirectIncomeIndex === -1 ? directIncomeIndex + 1 : indirectIncomeIndex)
+    ];
+  }
+
+  private replaceDirectIncomeForMonths(rows: MisPlRow[], responseRowsByPeriod: Map<string, Map<string, JdeDirectIncomeRow[]>>, months: Array<'mar' | 'apr' | 'may'>) {
+    const directIncomeIndex = rows.findIndex(row => row.section && row.particular === 'Direct Income');
+    const indirectIncomeIndex = rows.findIndex(row => row.section && row.particular === 'Indirect Income');
+    const periods = this.getDirectIncomePeriods().filter(period => months.includes(period.month));
+    const existingRows = directIncomeIndex === -1
+      ? []
+      : rows.slice(directIncomeIndex + 1, indirectIncomeIndex === -1 ? rows.length : indirectIncomeIndex);
+    const directRows = this.directIncomeMappings.map(mapping => {
+      const row: MisPlRow = {
+        ...(existingRows.find(item => item.particular === mapping.particular) || {}),
+        particular: mapping.particular
+      };
+
+      periods.forEach(period => {
+        const amountKey = `${period.month}Amount` as keyof MisPlRow;
+        const rowsByAccount = responseRowsByPeriod.get(period.month);
+        const amount = this.sumJdeRows(rowsByAccount?.get(mapping.accountNumber) || [], mapping.accountNumber, mapping.customerCode);
+
+        row[amountKey] = this.formatAmount(amount) as never;
+      });
+
+      return row;
+    });
+
+    periods.forEach(period => {
+      const amountKey = `${period.month}Amount` as keyof MisPlRow;
+      const ratioKey = `${period.month}Ratio` as keyof MisPlRow;
+      const total = directRows.reduce((sum, row) => sum + this.parseFormattedAmount(row[amountKey]), 0);
+
+      directRows.forEach(row => {
+        row[ratioKey] = this.formatRatio(this.parseFormattedAmount(row[amountKey]), total) as never;
+      });
+    });
+
+    const totalRow: MisPlRow = {
+      ...(existingRows.find(item => item.particular === 'Total Direct Income') || {}),
+      particular: 'Total Direct Income',
+      total: true
+    };
+
+    periods.forEach(period => {
+      const amountKey = `${period.month}Amount` as keyof MisPlRow;
+      totalRow[amountKey] = this.formatAmount(directRows.reduce((sum, row) => sum + this.parseFormattedAmount(row[amountKey]), 0)) as never;
+    });
+
+    const insertRows = [...directRows, totalRow];
+
+    if (directIncomeIndex === -1) {
+      return [{ particular: 'Direct Income', section: true }, ...insertRows, ...rows];
+    }
+
+    return [
+      ...rows.slice(0, directIncomeIndex + 1),
+      ...insertRows,
+      ...rows.slice(indirectIncomeIndex === -1 ? directIncomeIndex + 1 : indirectIncomeIndex)
+    ];
+  }
+
+  private formatAmount(value: number) {
+    return Math.round(value).toLocaleString('en-IN');
+  }
+
+  private parseFormattedAmount(value: unknown) {
+    if (typeof value === 'number') return value;
+    if (typeof value !== 'string') return 0;
+
+    const parsed = Number(value.replace(/,/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private toJdeDate(value: string) {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year.slice(-2)}`;
+  }
+
+  private formatRatio(value: number, total: number) {
+    if (!total) return '0.00%';
+    return `${((value / total) * 100).toFixed(2)}%`;
+  }
+
   setActive(tab: string) {
     this.activeTab = tab;
+  }
+
+  isDirectIncomeSkeletonRow(row: MisPlRow, month: 'mar' | 'apr' | 'may') {
+    return this.jdeDirectIncomeMonthLoading[month] && (
+      row.particular === 'Total Direct Income' ||
+      this.directIncomeMappings.some(mapping => mapping.particular === row.particular)
+    );
   }
 
   // onTabChange(index: number) {

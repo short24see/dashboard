@@ -1,0 +1,159 @@
+<section class="onedrive-page">
+  <header class="page-header">
+    <div>
+      <h1>OneDrive Excel Integration</h1>
+      <p>{{ userId }}</p>
+    </div>
+    <button type="button" class="secondary-btn" (click)="loadAccounts()" [disabled]="accountsLoading">
+      <mat-icon>refresh</mat-icon>
+      <span>{{ accountsLoading ? 'Refreshing' : 'Refresh' }}</span>
+    </button>
+  </header>
+
+  @if(status || error){
+  <div class="status-bar" [class.error]="error">
+    {{ error || status }}
+  </div>
+  }
+
+  <section class="section-band">
+    <h2>Microsoft App</h2>
+    <div class="form-grid">
+      <label>
+        <span>Tenant</span>
+        <input type="text" [(ngModel)]="tenantId">
+      </label>
+      <label>
+        <span>Client ID</span>
+        <input type="text" [(ngModel)]="clientId">
+      </label>
+      <label>
+        <span>Client Secret</span>
+        <input type="password" [(ngModel)]="clientSecret" autocomplete="new-password">
+      </label>
+      <label>
+        <span>Redirect URI</span>
+        <input type="text" [(ngModel)]="redirectUri">
+      </label>
+      <label>
+        <span>Department</span>
+        <input type="text" [(ngModel)]="department">
+      </label>
+      <div class="button-row">
+        <button type="button" class="primary-btn" (click)="saveConfig()" [disabled]="configLoading">
+          <mat-icon>save</mat-icon>
+          <span>{{ configLoading ? 'Saving' : 'Save Config' }}</span>
+        </button>
+        <button type="button" class="primary-btn" (click)="connect()">
+          <mat-icon>cloud_sync</mat-icon>
+          <span>Connect OneDrive</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="workspace-grid">
+    <div class="section-band">
+      <h2>Accounts</h2>
+      <div class="account-list">
+        @for(account of accounts; track account.accountId){
+        <button type="button" class="account-row" [class.active]="selectedAccountId === account.accountId"
+          (click)="selectedAccountId = account.accountId; folderStack = [{ name: 'Root' }]; loadItems()">
+          <span>{{ account.email }}</span>
+          <small>{{ account.department || 'General' }}</small>
+        </button>
+        }
+        @if(!accounts.length && !accountsLoading){
+        <div class="empty-state">No OneDrive account connected.</div>
+        }
+      </div>
+    </div>
+
+    <div class="section-band file-panel">
+      <div class="panel-heading">
+        <h2>Files</h2>
+        <div class="breadcrumb">
+          @for(folder of folderStack; track folder.name; let i = $index){
+          <button type="button" (click)="jumpToFolder(i)">{{ folder.name }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="file-table">
+        <div class="file-row table-head">
+          <span>Name</span>
+          <span>Type</span>
+          <span>Size</span>
+          <span>Modified</span>
+        </div>
+        @for(item of items; track item.id){
+        <button type="button" class="file-row" [class.selected]="selectedFile?.id === item.id"
+          [class.disabled]="item.type === 'file' && !item.isExcel" (click)="selectItem(item)">
+          <span class="file-name">
+            <mat-icon>{{ item.type === 'folder' ? 'folder' : 'description' }}</mat-icon>
+            {{ item.name }}
+          </span>
+          <span>{{ item.type }}</span>
+          <span>{{ formatSize(item.size) }}</span>
+          <span>{{ item.lastModifiedDateTime | date:'mediumDate' }}</span>
+        </button>
+        }
+        @if(!items.length && !itemsLoading){
+        <div class="empty-state">No files loaded.</div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section-band sync-panel">
+    <div>
+      <h2>Excel Sync</h2>
+      <p>{{ selectedFile?.name || 'No Excel file selected' }}</p>
+    </div>
+    <label>
+      <span>Mongo Collection</span>
+      <input type="text" [(ngModel)]="tableName" placeholder="FileData">
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="replaceExisting">
+      <span>Replace existing rows</span>
+    </label>
+    <button type="button" class="secondary-btn" (click)="previewSelectedFile()" [disabled]="!selectedFile || previewLoading">
+      <mat-icon>visibility</mat-icon>
+      <span>{{ previewLoading ? 'Previewing' : 'Preview' }}</span>
+    </button>
+    <button type="button" class="primary-btn" (click)="syncSelectedFile()" [disabled]="!selectedFile || syncLoading">
+      <mat-icon>download</mat-icon>
+      <span>{{ syncLoading ? 'Syncing' : 'Sync Excel' }}</span>
+    </button>
+  </section>
+
+  @if(preview){
+  <section class="section-band">
+    <div class="panel-heading">
+      <h2>{{ preview.sheetName }}</h2>
+      <span>{{ preview.totalRows }} rows</span>
+    </div>
+    <div class="preview-table">
+      <table>
+        <thead>
+          <tr>
+            @for(column of preview.columns; track column){
+            <th>{{ column }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for(row of preview.rows; track $index){
+          <tr>
+            @for(column of preview.columns; track column){
+            <td>{{ row[column] }}</td>
+            }
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  }
+</section>

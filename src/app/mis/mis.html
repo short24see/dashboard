@@ -35,6 +35,11 @@
 
 </div>
 @if(activeTab == 'pl'){
+@if(jdeDirectIncomeError || jdeDirectIncomeStatus){
+<div class="pl-status" [class.error]="jdeDirectIncomeError">
+    <span>{{ jdeDirectIncomeError || jdeDirectIncomeStatus }}</span>
+</div>
+}
 @if(plLoading || plError || plLastSyncedAt){
 <div class="pl-status" [class.error]="plError">
     @if(plLoading){
@@ -55,7 +60,10 @@
         <!-- PARTICULAR -->
         <ng-container matColumnDef="particular">
             <th mat-header-cell *matHeaderCellDef rowspan="2" class="particular-col">
-                PARTICULARS
+                <div class="particular-header-tools">
+                    <span>PARTICULARS</span>
+                    
+                </div>
             </th>
 
             <td mat-cell *matCellDef="let row" class="particular-col" [class.section]="row.section"
@@ -66,53 +74,116 @@
 
         <!-- MAR GROUP -->
         <ng-container matColumnDef="marGroup">
-            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header">
-                MAR-24
+            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header date-header">
+                <div class="month-date-pair">
+                    <label>
+                        <span>From</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeMarFromDate" (change)="loadDirectIncomeFromJde('mar')">
+                    </label>
+                    <label>
+                        <span>To</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeMarToDate" (change)="loadDirectIncomeFromJde('mar')">
+                    </label>
+                </div>
             </th>
         </ng-container>
 
         <ng-container matColumnDef="marAmount">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Amount (In Rs.)</th>
-            <td mat-cell *matCellDef="let row">{{ row.marAmount }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'mar')){
+                <span class="skeleton-cell"></span>
+                } @else {
+                {{ row.marAmount }}
+                }
+            </td>
         </ng-container>
 
         <ng-container matColumnDef="marRatio">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Ratio (%)</th>
-            <td mat-cell *matCellDef="let row">{{ row.marRatio }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'mar')){
+                <span class="skeleton-cell short"></span>
+                } @else {
+                {{ row.marRatio }}
+                }
+            </td>
         </ng-container>
 
         <!-- APR GROUP -->
         <ng-container matColumnDef="aprGroup">
-            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header">
-                APR-24
+            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header date-header">
+                <div class="month-date-pair">
+                    <label>
+                        <span>From</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeAprFromDate" (change)="loadDirectIncomeFromJde('apr')">
+                    </label>
+                    <label>
+                        <span>To</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeAprToDate" (change)="loadDirectIncomeFromJde('apr')">
+                    </label>
+                </div>
             </th>
         </ng-container>
 
         <ng-container matColumnDef="aprAmount">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Amount (In Rs.)</th>
-            <td mat-cell *matCellDef="let row">{{ row.aprAmount }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'apr')){
+                <span class="skeleton-cell"></span>
+                } @else {
+                {{ row.aprAmount }}
+                }
+            </td>
         </ng-container>
 
         <ng-container matColumnDef="aprRatio">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Ratio (%)</th>
-            <td mat-cell *matCellDef="let row">{{ row.aprRatio }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'apr')){
+                <span class="skeleton-cell short"></span>
+                } @else {
+                {{ row.aprRatio }}
+                }
+            </td>
         </ng-container>
 
         <!-- MAY GROUP -->
         <ng-container matColumnDef="mayGroup">
-            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header">
-                MAY-24
+            <th mat-header-cell *matHeaderCellDef colspan="2" class="group-header date-header">
+                <div class="month-date-pair">
+                    <label>
+                        <span>From</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeMayFromDate" (change)="loadDirectIncomeFromJde('may')">
+                    </label>
+                    <label>
+                        <span>To</span>
+                        <input type="date" [(ngModel)]="jdeDirectIncomeMayToDate" (change)="loadDirectIncomeFromJde('may')">
+                    </label>
+                </div>
             </th>
         </ng-container>
 
         <ng-container matColumnDef="mayAmount">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Amount (In Rs.)</th>
-            <td mat-cell *matCellDef="let row">{{ row.mayAmount }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'may')){
+                <span class="skeleton-cell"></span>
+                } @else {
+                {{ row.mayAmount }}
+                }
+            </td>
         </ng-container>
 
         <ng-container matColumnDef="mayRatio">
             <th mat-header-cell *matHeaderCellDef class="sub-header">Ratio (%)</th>
-            <td mat-cell *matCellDef="let row">{{ row.mayRatio }}</td>
+            <td mat-cell *matCellDef="let row">
+                @if(isDirectIncomeSkeletonRow(row, 'may')){
+                <span class="skeleton-cell short"></span>
+                } @else {
+                {{ row.mayRatio }}
+                }
+            </td>
         </ng-container>
 
         <!-- HEADER ROWS -->
